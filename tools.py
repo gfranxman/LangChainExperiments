@@ -86,7 +86,7 @@ class DoublerTool(BaseTool):
 
 llm = ChatOpenAI(
     openai_api_key=os.environ.get("OPENAI_API_KEY"),
-    temperature=1.2,
+    temperature=0.2,
     # 0.0 = no creativity with tool code, but even 1.0 seems to work.
     # going over 1 can cause lots of looping and errors because it has difficulty using the tools.
     model_name="gpt-3.5-turbo",
