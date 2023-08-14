@@ -11,7 +11,19 @@ from langchain.chains.conversation.memory import ConversationBufferWindowMemory
 from langchain.chat_models import ChatOpenAI
 from langchain.tools import BaseTool
 
+import yfinance as yf
 
+class StockTool(BaseTool):
+    name = "Stock Quote Tool"
+    description = ("use this tool to find stock quotes. To use the tool you must provide the "
+                   "stock_ticker_symbol argument. This is the"
+                   "ticker symbol of the stock for which you need a quote.")
+
+    def _arun(self, *args: Any, **kwargs: Any) -> str:
+        raise NotImplementedError("async run not implemented yet...")
+    def _run(self, stock_ticker_symbol):
+        stock = yf.Ticker(stock_ticker_symbol)
+        return stock.info
 class DirectoryTool(BaseTool):
     name = "Directory Tool"
     description = "use this tool to find json data about a person in the directory"
@@ -21,9 +33,10 @@ class DirectoryTool(BaseTool):
 
     def _run(self, person_name):
         directory = {
-            "Brad": {
+            "Glenn": {
                 "age": 32,
                 "occupation": "engineer",
+                "location": "Fishers, IN, USA",
                 "hobbies": ["hiking", "biking", "skiing"],
             },
             "Jane": {
@@ -86,7 +99,7 @@ class DoublerTool(BaseTool):
 
 llm = ChatOpenAI(
     openai_api_key=os.environ.get("OPENAI_API_KEY"),
-    temperature=0.2,
+    temperature=0.0,
     # 0.0 = no creativity with tool code, but even 1.0 seems to work.
     # going over 1 can cause lots of looping and errors because it has difficulty using the tools.
     model_name="gpt-3.5-turbo",
@@ -102,6 +115,7 @@ tools = [
     DoublerTool(),
     PythogorasTool(),
     DirectoryTool(),
+    StockTool(),
 ]
 
 # initialize agent
@@ -134,15 +148,11 @@ Overall, Assistant is a powerful system that can help with a wide range of tasks
 """
 # TOOL_DESCRIPTIONS = "\n".join([f"{tool.name} is {tool.description}" for tool in tools])
 TOOL_CLAUSE = """
-Unfortunately, Assistant is terrible at doubling numbers.
-   when provided with doubling and math questions, no matter how simple, 
-   assistant always refers to it's trusty tools and absolutely does not try to answer math or doubling questions by itself.
-"""
-TOOL_CLAUSE = """
 Unfortunately, Assistant is terrible at math.
    when provided with math questions, no matter how simple, 
    assistant always refers to it's trusty tools and absolutely does not try to answer math questions by itself.
    Assistant will always consult its tools before answering a math question.
+When asked about a company, always provide the company's ticker symbol and the quote using the "Stock Quote Tool".
 """
 ssytem_prompt = default_prompt.replace("[TOOL_CLAUSE]", TOOL_CLAUSE)
 toolie = initialize_agent(
@@ -151,7 +161,7 @@ toolie = initialize_agent(
     #  description -> ai should choose tools based upon their .description
     tools=tools,
     llm=llm,
-    verbose=True,
+    # verbose=True,
     max_iterations=3,  # how many steps of reasoning, evalultion, and reaction
     early_stopping_method="generate",  # the model will decide when to stop; "convergence",
     memory=conversational_memory,
@@ -167,15 +177,27 @@ initial_context = {
                 what is the length of the hypotenuse?""",
 }
 
-res = toolie(initial_context)
-print(f"{res=}")
-res = toolie({"input": "can you double that?"})
-print(f"{res=}")
-res = toolie({"input": "can you tell me about Bob?"})
-print(f"{res=}")
-res = toolie({"input": "How can I contact him?"})
-print(f"{res['output']=}")
-res = toolie({"input": "How can I contact Jane?"})
-print(f"{res['output']=}")
-res = toolie({"input": "How can I contact Glenn?"})
-print(f"{res['output']=}")
+
+import logging
+import os
+
+if __name__ == "__main__":
+    LOGLEVEL = os.environ.get('LOGLEVEL', 'WARNING').upper()
+    logging.basicConfig(level=LOGLEVEL)
+
+    res = toolie(initial_context)
+    print(f"{res=}")
+    res = toolie({"input": "can you double that?"})
+    print(f"{res=}")
+    res = toolie({"input": "can you tell me about Bob?"})
+    print(f"{res=}")
+    res = toolie({"input": "How can I contact him?"})
+    print(f"{res['output']=}")
+    res = toolie({"input": "How can I contact Jane?"})
+    print(f"{res['output']=}")
+    res = toolie({"input": "How can I contact Glenn?"})
+    print(f"{res['output']=}")
+    res = toolie({"input": "What is Factset?"})
+    print(f"{res['output']=}")
+    res = toolie({"input": "FactSet stock value?"})
+    print(f"{res['output']=}")
