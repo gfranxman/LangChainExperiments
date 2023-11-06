@@ -12,6 +12,9 @@ from langchain.chat_models import ChatOpenAI
 from langchain.tools import BaseTool
 
 import yfinance as yf
+import os
+from alpha_vantage.timeseries import TimeSeries
+
 
 class StockTool(BaseTool):
     name = "Stock Quote Tool"
@@ -21,9 +24,15 @@ class StockTool(BaseTool):
 
     def _arun(self, *args: Any, **kwargs: Any) -> str:
         raise NotImplementedError("async run not implemented yet...")
+
     def _run(self, stock_ticker_symbol):
-        stock = yf.Ticker(stock_ticker_symbol)
-        return stock.info
+        #stock = yf.Ticker(stock_ticker_symbol)
+        #return stock.info
+        ts = TimeSeries(key=os.environ.get('ALPHA_VANTAGE_API_KEY'))
+        quote = ts.get_quote_endpoint(stock_ticker_symbol)
+        return quote
+
+
 class DirectoryTool(BaseTool):
     name = "Directory Tool"
     description = "use this tool to find json data about a person in the directory"
@@ -187,17 +196,24 @@ if __name__ == "__main__":
 
     res = toolie(initial_context)
     print(f"{res=}")
+
     res = toolie({"input": "can you double that?"})
-    print(f"{res=}")
+    print(f"{res['output']=}")
+
     res = toolie({"input": "can you tell me about Bob?"})
-    print(f"{res=}")
+    print(f"{res['output']=}")
+
     res = toolie({"input": "How can I contact him?"})
     print(f"{res['output']=}")
+
     res = toolie({"input": "How can I contact Jane?"})
     print(f"{res['output']=}")
+
     res = toolie({"input": "How can I contact Glenn?"})
     print(f"{res['output']=}")
+
     res = toolie({"input": "What is Factset?"})
     print(f"{res['output']=}")
+
     res = toolie({"input": "FactSet stock value?"})
     print(f"{res['output']=}")

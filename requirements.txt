@@ -2,4 +2,5 @@
 langchain==v0.0.147
 openai==0.27.8
 yfinance==0.2.27
+alpha_advantage
 
